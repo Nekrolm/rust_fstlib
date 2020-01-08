@@ -1,4 +1,19 @@
-use crate::fst::std_arc::StateId;
+
+
+type StateId = i32;
+type Label = i32;
+
+pub const kNoStateId : StateId = -1;
+pub const kNoLabel : Label = -1;
+
+#[derive(Copy, Clone)]
+pub struct ArcTpl<Weight> {
+    pub ilabel : Label,
+    pub olabel : Label,
+    pub weight : Weight,
+    pub nextstate : StateId
+}
+
 
 pub trait Arc {
     type StateId;
@@ -6,6 +21,11 @@ pub trait Arc {
     type Weight;
 }
 
+impl<Weight> Arc for ArcTpl<Weight> {
+    type StateId = StateId;
+    type Label = Label;
+    type Weight = Weight;
+}
 
 
 pub trait Fst<ArcType : Arc> {

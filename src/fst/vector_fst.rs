@@ -5,7 +5,7 @@ use fst_traits::Fst;
 use fst_traits::Arc;
 use std_arc::StdArc;
 use std_arc::Weight;
-use std_arc::kNoStateId;
+use fst_traits::kNoStateId;
 
 struct StateDescription {
     arcs : Vec<StdArc>,
