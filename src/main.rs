@@ -1,9 +1,33 @@
 mod fst;
 use fst::vector_fst;
 use fst::fst_traits;
+use fst::const_fst;
 use crate::fst::std_arc::{StdArc, Weight};
 use crate::fst::fst_traits::{Fst, StateIterator, ArcIterator};
 
+
+fn traverse<'a, FST : fst_traits::Fst<'a,StdArc>>(g : &'a FST){
+    let mut siter = g.MakeStateIterator();
+
+    while !siter.Done() {
+        let state = siter.Value();
+        let mut aiter = g.MakeArcIterator(state.clone());
+        while !aiter.Done() {
+            let arc = aiter.Value();
+            println!("{from} -> {to}, i:{input}/o:{output}, w : {weight}",
+                     from=state,
+                     to=arc.nextstate,
+                     input=arc.ilabel,
+                     output=arc.olabel,
+                     weight=arc.weight.Value());
+            aiter.Next();
+        }
+        println!("final: {state} -> {weight}",
+                 state=state,
+                 weight=g.Final(state).Value());
+        siter.Next();
+    }
+}
 
 fn main() {
 
@@ -34,34 +58,11 @@ fn main() {
         g.SetFinal(s3, Weight::new(5.));
     }
 
-    {
-        let mut siter = vector_fst::StateIterator::new(&g);
 
-        while !siter.Done() {
-            println!("{}", siter.Value());
-            siter.Next();
-        }
-    }
-    {
-        let mut siter = vector_fst::StateIterator::new(&g);
+    traverse(&g);
 
-        while !siter.Done() {
-            let state = siter.Value();
-            let mut aiter = vector_fst::ArcIterator::new(&g, state.clone());
-            while !aiter.Done() {
-                let arc = aiter.Value();
-                println!("{from} -> {to}, i:{input}/o:{output}, w : {weight}",
-                        from=state,
-                        to=arc.nextstate,
-                        input=arc.ilabel,
-                        output=arc.olabel,
-                        weight=arc.weight.Value());
-                aiter.Next();
-            }
-            println!("final: {state} -> {weight}",
-                    state=state,
-                    weight=g.Final(state).Value());
-            siter.Next();
-        }
-    }
+    println!("try const!");
+
+    let g_const = const_fst::ConstFst::new(&g);
+    traverse(&g_const);
 }

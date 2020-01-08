@@ -3,6 +3,7 @@ use crate::fst::std_arc;
 use fst_traits::ExpandedFst;
 use fst_traits::Fst;
 use fst_traits::Arc;
+use fst_traits::StateId;
 use std_arc::StdArc;
 use std_arc::Weight;
 use fst_traits::kNoStateId;
@@ -13,7 +14,6 @@ struct StateDescription {
 }
 
 
-type StateId = <StdArc as Arc>::StateId;
 
 pub struct VectorFst {
     start : StateId,
@@ -46,25 +46,34 @@ impl VectorFst {
     }
 }
 
-impl Fst<StdArc> for VectorFst {
-    type StateId = StateId;
-    type Weight = Weight;
+impl<'a> Fst<'a, StdArc> for VectorFst {
     type Arc = StdArc;
+//
+    type ArcIterator = ArcIterator<'a>;
+    type StateIterator = StateIterator<'a>;
 
-    fn Final(&self, state : Self::StateId) -> Self::Weight {
+
+    fn Final(&self, state : StateId) -> <Self::Arc as Arc>::Weight {
         return self.states[state as usize].final_weight;
     }
 
-    fn Start(&self) -> Self::StateId {
+    fn Start(&self) -> StateId {
         return self.start;
+    }
+
+    fn MakeArcIterator(&'a self, state : StateId) -> Self::ArcIterator {
+        return ArcIterator::new(self, state);
+    }
+    fn MakeStateIterator(&'a self) -> Self::StateIterator {
+        return StateIterator::new(self);
     }
 }
 
-impl ExpandedFst<StdArc> for VectorFst {
-    fn NumStates(&self) -> Self::StateId {
-        return self.states.len() as Self::StateId;
+impl ExpandedFst<'_, StdArc> for VectorFst {
+    fn NumStates(&self) -> StateId {
+        return self.states.len() as StateId;
     }
-    fn NumArcs(&self, state : Self::StateId) -> isize {
+    fn NumArcs(&self, state : StateId) -> isize {
         return self.states[state as usize].arcs.len() as isize;
     }
 }
@@ -80,7 +89,7 @@ impl<'a> ArcIterator<'a> {
     }
 }
 
-impl fst_traits::ArcIterator<StdArc, VectorFst> for ArcIterator<'_> {
+impl fst_traits::ArcIterator<StdArc> for ArcIterator<'_> {
     fn Value(&self) -> StdArc {
         return self.vec[self.pos]
     }
@@ -105,7 +114,7 @@ impl <'a> StateIterator<'a> {
     }
 }
 
-impl fst_traits::StateIterator<StdArc, VectorFst> for StateIterator<'_> {
+impl fst_traits::StateIterator for StateIterator<'_> {
 
     fn Value(&self) -> StateId {
         return self.pos as StateId;

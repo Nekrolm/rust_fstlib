@@ -1,7 +1,7 @@
 
 
-type StateId = i32;
-type Label = i32;
+pub type StateId = i32;
+pub type Label = i32;
 
 pub const kNoStateId : StateId = -1;
 pub const kNoLabel : Label = -1;
@@ -16,40 +16,40 @@ pub struct ArcTpl<Weight> {
 
 
 pub trait Arc {
-    type StateId;
-    type Label;
     type Weight;
 }
 
 impl<Weight> Arc for ArcTpl<Weight> {
-    type StateId = StateId;
-    type Label = Label;
     type Weight = Weight;
 }
 
 
-pub trait Fst<ArcType : Arc> {
-    type StateId;
-    type Weight;
+pub trait Fst<'a, ArcType : Arc> {
     type Arc;
 
-    fn Final(&self, state : Self::StateId) -> Self::Weight;
-    fn Start(&self) -> Self::StateId;
+    type ArcIterator : ArcIterator<ArcType>;
+    type StateIterator : StateIterator;
+
+    fn Final(&self, state : StateId) -> <ArcType as Arc>::Weight;
+    fn Start(&self) -> StateId;
+
+    fn MakeArcIterator(&'a self, state : StateId) -> Self::ArcIterator;
+    fn MakeStateIterator(&'a self) -> Self::StateIterator;
 }
 
-pub trait ExpandedFst<ArcType : Arc> : Fst<ArcType> {
-    fn NumStates(&self) -> Self::StateId;
-    fn NumArcs(&self, state : Self::StateId) -> isize;
+pub trait ExpandedFst<'a, ArcType : Arc> : Fst<'a, ArcType> {
+    fn NumStates(&self) -> StateId;
+    fn NumArcs(&self, state : StateId) -> isize;
 }
 
-pub trait StateIterator<ArcType : Arc, FstType : Fst<ArcType>> {
-    fn Value(&self) -> FstType::StateId;
+pub trait StateIterator {
+    fn Value(&self) -> StateId;
     fn Done(&self) -> bool;
     fn Next(&mut self);
 }
 
-pub trait ArcIterator<ArcType : Arc, FstType : Fst<ArcType>> {
-    fn Value(&self) -> FstType::Arc;
+pub trait ArcIterator<ArcType : Arc> {
+    fn Value(&self) -> ArcType;
     fn Done(&self) -> bool;
     fn Next(&mut self);
 }
