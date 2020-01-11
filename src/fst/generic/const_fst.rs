@@ -1,11 +1,6 @@
-use crate::fst::fst_traits;
-use crate::fst::std_arc;
-use fst_traits::ExpandedFst;
-use fst_traits::{IterableFst, BaseFst};
-use fst_traits::Arc;
-use std_arc::StdArc;
-use std_arc::Weight;
-use fst_traits::StateId;
+use super::super::traits;
+use super::super::generic;
+use crate::fst::traits::StateId;
 
 #[derive(Copy, Clone)]
 struct ArcRange {
@@ -14,30 +9,29 @@ struct ArcRange {
 }
 
 #[derive(Copy, Clone)]
-struct StateDescription {
+struct StateDescription<ArcType : traits::Arc> {
     arcs : ArcRange,
-    final_weight : <StdArc as Arc>::Weight,
+    final_weight : ArcType::Weight,
 }
 
-impl StateDescription {
-    fn new() -> StateDescription {
+impl<ArcType : traits::Arc> StateDescription<ArcType> {
+    fn new() -> Self {
+        use traits::Weight;
         return StateDescription{ arcs : ArcRange{begin :0,
                                                 end:0},
-                                final_weight : Weight::Zero() }
+                                final_weight : ArcType::Weight::Zero() }
     }
 }
 
 
-pub struct ConstFst {
-    start : StateId,
-    arcs : Vec<StdArc>,
-    states : Vec<StateDescription>,
+pub struct ConstFst<ArcType : traits::Arc> {
+    start : traits::StateId,
+    arcs : Vec<ArcType>,
+    states : Vec<StateDescription<ArcType>>,
 }
 
-impl BaseFst<StdArc> for ConstFst {
-    type Arc = StdArc;
-
-    fn Final(&self, state : StateId) -> <Self::Arc as fst_traits::Arc>::Weight {
+impl<ArcType : traits::Arc> traits::BaseFst<ArcType> for ConstFst<ArcType> {
+    fn Final(&self, state : StateId) -> ArcType::Weight {
         return self.states[state as usize].final_weight;
     }
     fn Start(&self) -> StateId {
@@ -45,7 +39,7 @@ impl BaseFst<StdArc> for ConstFst {
     }
 }
 
-impl ExpandedFst<StdArc> for ConstFst {
+impl<ArcType : traits::Arc> traits::ExpandedFst<ArcType> for ConstFst<ArcType> {
     fn NumStates(&self) -> StateId {
         return self.states.len() as StateId;
     }
@@ -56,24 +50,24 @@ impl ExpandedFst<StdArc> for ConstFst {
     }
 }
 
-pub struct ArcIterator<'a> {
+pub struct CFstArcIterator<'a, ArcType : traits::Arc> {
     vec : ArcRange,
-    fst : &'a ConstFst,
+    fst : &'a ConstFst<ArcType>,
     pos : usize
 }
 
-pub struct StateIterator<'a> {
-    vec : &'a Vec<StateDescription>,
+pub struct CFstStateIterator<'a, ArcType : traits::Arc> {
+    vec : &'a Vec<StateDescription<ArcType>>,
     pos : usize
 }
 
-impl<'a> IterableFst<'a, StdArc> for ConstFst {
-    type ArcIterator = ArcIterator<'a>;
-    type StateIterator = StateIterator<'a>;
+impl<'a, ArcType : 'a + traits::Arc> traits::IterableFst<'a, ArcType> for ConstFst<ArcType> {
+    type ArcIterator = CFstArcIterator<'a, ArcType>;
+    type StateIterator = CFstStateIterator<'a, ArcType>;
 }
 
-impl<'a> fst_traits::ArcIterator<'a, StdArc, ConstFst> for ArcIterator<'a> {
-    fn Value(&self) -> StdArc {
+impl<'a, ArcType : traits::Arc> traits::ArcIterator<'a, ArcType, StateId, ConstFst<ArcType>> for CFstArcIterator<'a, ArcType> {
+    fn Value(&self) -> ArcType {
         return self.fst.arcs[self.pos]
     }
 
@@ -85,14 +79,15 @@ impl<'a> fst_traits::ArcIterator<'a, StdArc, ConstFst> for ArcIterator<'a> {
         self.pos += 1;
     }
 
-    fn new (fst: &'a ConstFst, state : StateId) -> Self {
+    fn new (fst: &'a ConstFst<ArcType>,
+            state : StateId) -> Self {
         let arc_range = fst.states[state as usize].arcs;
-        return ArcIterator{ vec : arc_range, fst, pos : arc_range.begin };
+        return Self{ vec : arc_range, fst, pos : arc_range.begin };
     }
 }
 
 
-impl<'a> fst_traits::StateIterator<'a, StdArc, ConstFst> for StateIterator<'a> {
+impl<'a, ArcType : traits::Arc> traits::StateIterator<'a, ArcType, StateId, ConstFst<ArcType>> for CFstStateIterator<'a, ArcType> {
 
     fn Value(&self) -> StateId {
         return self.pos as StateId;
@@ -106,33 +101,28 @@ impl<'a> fst_traits::StateIterator<'a, StdArc, ConstFst> for StateIterator<'a> {
         self.pos += 1;
     }
 
-    fn new (fst: &'a ConstFst) -> Self {
-        return StateIterator{ vec : &fst.states, pos : 0 };
+    fn new (fst: &'a ConstFst<ArcType>) -> Self {
+        return Self{ vec : &fst.states, pos : 0 };
     }
 
 }
 
 
-impl ConstFst {
-    pub  fn new<'a, FST : IterableFst<'a,StdArc>>(fst : &'a FST) -> ConstFst {
-        let mut result = ConstFst {
-            start : fst_traits::kNoStateId,
+impl<ArcType : traits::Arc> ConstFst<ArcType> {
+    pub  fn new<'a, FST : traits::IterableFst<'a, ArcType>> (fst : &'a FST) -> Self {
+        let mut result = Self {
+            start : traits::kNoStateId,
             arcs : Vec::new(),
             states : Vec::new(),
         };
 
 
-        let mut states = & mut result.states;
-
-
-        use fst_traits::MakeArcIterator;
-        use fst_traits::MakeStateIterator;
-
-        use fst_traits::ArcIterator;
-        use fst_traits::StateIterator;
+        let states = & mut result.states;
+        use traits::StateIterator;
+        use traits::ArcIterator;
 
         {
-            let mut siter = FST::StateIterator::new(fst);
+            let mut siter = generic::StateIterator::new(fst);
             while !siter.Done() {
                 let state = siter.Value();
                 if state as usize >= states.len() {
@@ -144,11 +134,11 @@ impl ConstFst {
         }
 
         {
-            let mut siter = MakeStateIterator(fst);
+            let mut siter = generic::StateIterator::new(fst);
             while !siter.Done() {
                 let state = siter.Value() as usize;
                 let arcs_begin = result.arcs.len();
-                let mut aiter = MakeArcIterator(fst,siter.Value());
+                let mut aiter = generic::ArcIterator::new(fst,siter.Value());
                 while !aiter.Done() {
                     result.arcs.push(aiter.Value());
                     aiter.Next();
@@ -156,7 +146,7 @@ impl ConstFst {
                 let arcs_end = result.arcs.len();
                 let arcs = ArcRange{begin : arcs_begin, end : arcs_end};
                 let weight = fst.Final(siter.Value() );
-                states[state] = StateDescription{arcs, final_weight : weight as Weight};
+                states[state] = StateDescription{arcs, final_weight : weight};
                 siter.Next();
             }
         }
