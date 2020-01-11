@@ -3,15 +3,18 @@ use fst::vector_fst;
 use fst::fst_traits;
 use fst::const_fst;
 use crate::fst::std_arc::{StdArc, Weight};
-use crate::fst::fst_traits::{Fst, StateIterator, ArcIterator};
+use crate::fst::fst_traits::{BaseFst, IterableFst, StateIterator, ArcIterator};
 
 
-fn traverse<'a, FST : fst_traits::Fst<'a,StdArc>>(g : &'a FST){
-    let mut siter = g.MakeStateIterator();
+fn traverse<'a, FST : fst_traits::IterableFst<'a,StdArc>>(g : &'a FST){
+    use fst_traits::MakeStateIterator;
+    use fst_traits::MakeArcIterator;
+
+    let mut siter = MakeStateIterator(g);
 
     while !siter.Done() {
         let state = siter.Value();
-        let mut aiter = g.MakeArcIterator(state.clone());
+        let mut aiter = MakeArcIterator(g,state.clone());
         while !aiter.Done() {
             let arc = aiter.Value();
             println!("{from} -> {to}, i:{input}/o:{output}, w : {weight}",

@@ -1,7 +1,7 @@
 use crate::fst::fst_traits;
 use crate::fst::std_arc;
 use fst_traits::ExpandedFst;
-use fst_traits::Fst;
+use fst_traits::{BaseFst, IterableFst};
 use fst_traits::Arc;
 use fst_traits::StateId;
 use std_arc::StdArc;
@@ -46,12 +46,8 @@ impl VectorFst {
     }
 }
 
-impl<'a> Fst<'a, StdArc> for VectorFst {
+impl BaseFst<StdArc> for VectorFst {
     type Arc = StdArc;
-//
-    type ArcIterator = ArcIterator<'a>;
-    type StateIterator = StateIterator<'a>;
-
 
     fn Final(&self, state : StateId) -> <Self::Arc as Arc>::Weight {
         return self.states[state as usize].final_weight;
@@ -60,16 +56,9 @@ impl<'a> Fst<'a, StdArc> for VectorFst {
     fn Start(&self) -> StateId {
         return self.start;
     }
-
-    fn MakeArcIterator(&'a self, state : StateId) -> Self::ArcIterator {
-        return ArcIterator::new(self, state);
-    }
-    fn MakeStateIterator(&'a self) -> Self::StateIterator {
-        return StateIterator::new(self);
-    }
 }
 
-impl ExpandedFst<'_, StdArc> for VectorFst {
+impl ExpandedFst<StdArc> for VectorFst {
     fn NumStates(&self) -> StateId {
         return self.states.len() as StateId;
     }
@@ -78,18 +67,24 @@ impl ExpandedFst<'_, StdArc> for VectorFst {
     }
 }
 
+
 pub struct ArcIterator<'a> {
     vec : &'a Vec<StdArc>,
     pos : usize
 }
 
-impl<'a> ArcIterator<'a> {
-    pub fn new (fst: &'a VectorFst, state : StateId) -> Self {
-        return ArcIterator{ vec : &fst.states[state as usize].arcs, pos : 0 };
-    }
+pub struct StateIterator<'a> {
+    vec : &'a Vec<StateDescription>,
+    pos : usize
 }
 
-impl fst_traits::ArcIterator<StdArc> for ArcIterator<'_> {
+impl<'a> IterableFst<'a, StdArc> for VectorFst {
+    type ArcIterator = ArcIterator<'a>;
+    type StateIterator = StateIterator<'a>;
+}
+
+
+impl<'a> fst_traits::ArcIterator<'a, StdArc, VectorFst> for ArcIterator<'a> {
     fn Value(&self) -> StdArc {
         return self.vec[self.pos]
     }
@@ -101,21 +96,14 @@ impl fst_traits::ArcIterator<StdArc> for ArcIterator<'_> {
     fn Next(&mut self) {
         self.pos += 1;
     }
-}
 
-pub struct StateIterator<'a> {
-    vec : &'a Vec<StateDescription>,
-    pos : usize
-}
-
-impl <'a> StateIterator<'a> {
-    pub fn new (fst: &'a VectorFst) -> Self {
-        return StateIterator{ vec : &fst.states, pos : 0 };
+    fn new (fst: &'a VectorFst, state : StateId) -> Self {
+        return ArcIterator{ vec : &fst.states[state as usize].arcs, pos : 0 };
     }
 }
 
-impl fst_traits::StateIterator for StateIterator<'_> {
 
+impl<'a> fst_traits::StateIterator<'a, StdArc, VectorFst> for StateIterator<'a> {
     fn Value(&self) -> StateId {
         return self.pos as StateId;
     }
@@ -126,6 +114,10 @@ impl fst_traits::StateIterator for StateIterator<'_> {
 
     fn Next(&mut self) {
         self.pos += 1;
+    }
+
+    fn new (fst: &'a VectorFst) -> Self {
+        return StateIterator{ vec : &fst.states, pos : 0 };
     }
 }
 
