@@ -1,14 +1,13 @@
 mod fst;
 
 fn traverse<'a, FST : fst::std::Fst<'a>>(g : &'a FST){
-    use crate::fst::generic;
-    use crate::fst::traits::*;
+    use fst::std::*;
 
-    let mut siter = generic::StateIterator::new(g);
+    let mut siter = StateIterator::new(g);
 
     while !siter.Done() {
         let state = siter.Value();
-        let mut aiter = generic::ArcIterator::new(g,state.clone());
+        let mut aiter = ArcIterator::new(g,state.clone());
         while !aiter.Done() {
             let arc = aiter.Value();
             println!("{from} -> {to}, i:{input}/o:{output}, w : {weight}",
@@ -28,7 +27,6 @@ fn traverse<'a, FST : fst::std::Fst<'a>>(g : &'a FST){
 
 fn main() {
     use crate::fst::std;
-    use crate::fst::traits::*;
     let mut g = std::VectorFst::new();
     {
         let s1 = g.AddState();

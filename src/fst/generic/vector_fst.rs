@@ -38,15 +38,23 @@ impl <ArcType : traits::Arc> VectorFst<ArcType> {
     pub fn SetStart(&mut self, state : traits::StateId) {
         self.start = state;
     }
+
+    pub fn Final(&self, state : traits::StateId) -> ArcType::Weight {
+        return self.states[state as usize].final_weight;
+    }
+
+    pub fn Start(&self) -> traits::StateId {
+        return self.start;
+    }
 }
 
 impl<ArcType : traits::Arc> traits::BaseFst<ArcType> for VectorFst<ArcType> {
     fn Final(&self, state : traits::StateId) -> ArcType::Weight {
-        return self.states[state as usize].final_weight;
+        return self.Final(state);
     }
 
     fn Start(&self) -> traits::StateId {
-        return self.start;
+        return self.Start();
     }
 }
 
@@ -59,60 +67,68 @@ impl<ArcType : traits::Arc> traits::ExpandedFst<ArcType> for VectorFst<ArcType> 
     }
 }
 
+mod details {
 
-pub struct VFstArcIterator<'a, ArcType : traits::Arc> {
-    vec : &'a Vec<ArcType>,
-    pos : usize
-}
+    use super::traits as traits;
+    use super::VectorFst;
 
-pub struct VFstStateIterator<'a, ArcType : traits::Arc> {
-    vec : &'a Vec<StateDescription<ArcType>>,
-    pos : usize
+    pub struct ArcIterator<'a, ArcType: traits::Arc> {
+        vec: &'a Vec<ArcType>,
+        pos: usize
+    }
+
+    pub struct StateIterator<'a, ArcType: traits::Arc> {
+        vec: &'a Vec<super::StateDescription<ArcType>>,
+        pos: usize
+    }
+
+    impl<'a, ArcType : traits::Arc> traits::ArcIterator<'a, ArcType, traits::StateId, VectorFst<ArcType>>
+    for ArcIterator<'a, ArcType> {
+        fn Value(&self) -> ArcType {
+            return self.vec[self.pos]
+        }
+
+        fn Done(&self) -> bool {
+            return self.pos == self.vec.len();
+        }
+
+        fn Next(&mut self) {
+            self.pos += 1;
+        }
+
+        fn new (fst: &'a VectorFst<ArcType>, state : traits::StateId) -> Self {
+            return Self{ vec : &fst.states[state as usize].arcs, pos : 0 };
+        }
+    }
+
+
+    impl<'a, ArcType : traits::Arc> traits::StateIterator<'a, ArcType, traits::StateId, VectorFst<ArcType>>
+    for StateIterator<'a, ArcType> {
+        fn Value(&self) -> traits::StateId {
+            return self.pos as traits::StateId;
+        }
+
+        fn Done(&self) -> bool {
+            return self.pos == self.vec.len();
+        }
+
+        fn Next(&mut self) {
+            self.pos += 1;
+        }
+
+        fn new (fst: &'a VectorFst<ArcType>) -> Self {
+            return Self{ vec : &fst.states, pos : 0 };
+        }
+    }
+
 }
 
 impl<'a, ArcType : 'a + traits::Arc> traits::IterableFst<'a, ArcType> for VectorFst<ArcType> {
-    type ArcIterator = VFstArcIterator<'a, ArcType>;
-    type StateIterator = VFstStateIterator<'a, ArcType>;
+    type ArcIterator = details::ArcIterator<'a, ArcType>;
+    type StateIterator = details::StateIterator<'a, ArcType>;
 }
 
 
-impl<'a, ArcType : traits::Arc> traits::ArcIterator<'a, ArcType, traits::StateId, VectorFst<ArcType>>
-    for VFstArcIterator<'a, ArcType> {
-    fn Value(&self) -> ArcType {
-        return self.vec[self.pos]
-    }
 
-    fn Done(&self) -> bool {
-        return self.pos == self.vec.len();
-    }
-
-    fn Next(&mut self) {
-        self.pos += 1;
-    }
-
-    fn new (fst: &'a VectorFst<ArcType>, state : traits::StateId) -> Self {
-        return Self{ vec : &fst.states[state as usize].arcs, pos : 0 };
-    }
-}
-
-
-impl<'a, ArcType : traits::Arc> traits::StateIterator<'a, ArcType, traits::StateId, VectorFst<ArcType>>
-for VFstStateIterator<'a, ArcType> {
-    fn Value(&self) -> traits::StateId {
-        return self.pos as traits::StateId;
-    }
-
-    fn Done(&self) -> bool {
-        return self.pos == self.vec.len();
-    }
-
-    fn Next(&mut self) {
-        self.pos += 1;
-    }
-
-    fn new (fst: &'a VectorFst<ArcType>) -> Self {
-        return Self{ vec : &fst.states, pos : 0 };
-    }
-}
 //
 //

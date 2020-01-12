@@ -7,7 +7,7 @@ pub struct StateIterator {}
 
 impl ArcIterator {
     pub fn new<'a, ArcType : traits::Arc,
-                StateType,
+                StateType :  Copy + Clone,
                 FST : traits::IterableFst<'a, ArcType, StateType>>(fst : &'a FST,
                                                         state : StateType)
         -> FST::ArcIterator {
@@ -17,7 +17,7 @@ impl ArcIterator {
 }
 
 impl StateIterator {
-    pub fn new<'a, ArcType : traits::Arc, StateType,
+    pub fn new<'a, ArcType : traits::Arc, StateType :  Copy + Clone,
                 FST : traits::IterableFst<'a, ArcType, StateType>>(fst : &'a FST)
         -> FST::StateIterator {
         use traits::StateIterator;

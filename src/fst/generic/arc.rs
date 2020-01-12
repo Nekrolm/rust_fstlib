@@ -13,6 +13,15 @@ pub struct Arc<W : Weight> {
     pub nextstate : StateId
 }
 
+impl<W : Weight> Arc<W> {
+    pub fn new(ilabel : Label,
+               olabel: Label,
+               weight : W,
+               nextstate : StateId) -> Self {
+        return Self{ilabel, olabel, weight, nextstate};
+    }
+}
+
 impl<W : Weight> traits::Arc for Arc<W> {
     type Weight = W;
     type Label = Label;
@@ -22,7 +31,7 @@ impl<W : Weight> traits::Arc for Arc<W> {
            olabel: Label,
            weight : Self::Weight,
            nextstate : StateId) -> Self {
-        return Arc{ilabel, olabel, weight, nextstate};
+        return Arc::new(ilabel, olabel, weight, nextstate);
     }
 
 
@@ -39,3 +48,4 @@ impl<W : Weight> traits::Arc for Arc<W> {
         return self.nextstate;
     }
 }
+

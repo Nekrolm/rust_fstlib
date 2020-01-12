@@ -1,5 +1,26 @@
 mod weight;
-mod detail;
 
-pub use detail::*;
 pub use weight::*;
+
+use super::generic;
+use super::traits;
+
+pub type Arc = generic::Arc<weight::Weight>;
+pub type VectorFst = generic::VectorFst<Arc>;
+pub type ConstFst = generic::ConstFst<Arc>;
+
+pub trait Fst<'a, SelfType : traits::BaseFst<Arc> = Self> :
+traits::IterableFst<'a, Arc, traits::StateId, SelfType> {}
+
+impl<'a> Fst<'a> for VectorFst {}
+impl<'a> Fst<'a> for ConstFst {}
+
+// forward generic make functions for iterators
+pub use generic::ArcIterator;
+pub use generic::StateIterator;
+
+//forward traits
+pub use traits::ArcIterator as ArcIteratorTrait;
+pub use traits::StateIterator as StateIteratorTrait;
+pub use traits::Weight as WeightTraits;
+pub use traits::Arc as ArcTraits;

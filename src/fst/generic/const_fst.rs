@@ -32,81 +32,85 @@ pub struct ConstFst<ArcType : traits::Arc> {
 
 impl<ArcType : traits::Arc> traits::BaseFst<ArcType> for ConstFst<ArcType> {
     fn Final(&self, state : StateId) -> ArcType::Weight {
-        return self.states[state as usize].final_weight;
+        return self.Final(state);
     }
     fn Start(&self) -> StateId {
-        return self.start;
+        return self.Start();
     }
 }
 
 impl<ArcType : traits::Arc> traits::ExpandedFst<ArcType> for ConstFst<ArcType> {
     fn NumStates(&self) -> StateId {
-        return self.states.len() as StateId;
+        return self.NumStates();
     }
     fn NumArcs(&self, state : StateId) -> isize {
-        let state_descr = &self.states[state as usize];
-        let arc_indexer = &state_descr.arcs;
-        return (arc_indexer.end - arc_indexer.begin) as isize;
+        return self.NumArcs(state);
     }
 }
 
-pub struct CFstArcIterator<'a, ArcType : traits::Arc> {
-    vec : ArcRange,
-    fst : &'a ConstFst<ArcType>,
-    pos : usize
-}
+mod details {
+    use super::traits;
+    use super::ConstFst;
+    use super::StateId;
 
-pub struct CFstStateIterator<'a, ArcType : traits::Arc> {
-    vec : &'a Vec<StateDescription<ArcType>>,
-    pos : usize
+    pub struct ArcIterator<'a, ArcType: traits::Arc> {
+        vec: super::ArcRange,
+        fst: &'a ConstFst<ArcType>,
+        pos: usize
+    }
+
+    pub struct StateIterator<'a, ArcType: traits::Arc> {
+        vec: &'a Vec<super::StateDescription<ArcType>>,
+        pos: usize
+    }
+
+
+    impl<'a, ArcType: traits::Arc> traits::ArcIterator<'a, ArcType, StateId, ConstFst<ArcType>>
+    for ArcIterator<'a, ArcType> {
+        fn Value(&self) -> ArcType {
+            return self.fst.arcs[self.pos]
+        }
+
+        fn Done(&self) -> bool {
+            return self.pos == self.vec.end;
+        }
+
+        fn Next(&mut self) {
+            self.pos += 1;
+        }
+
+        fn new(fst: &'a ConstFst<ArcType>,
+               state: StateId) -> Self {
+            let arc_range = fst.states[state as usize].arcs;
+            return Self { vec: arc_range, fst, pos: arc_range.begin };
+        }
+    }
+
+
+    impl<'a, ArcType: traits::Arc> traits::StateIterator<'a, ArcType, StateId, ConstFst<ArcType>>
+    for StateIterator<'a, ArcType> {
+        fn Value(&self) -> StateId {
+            return self.pos as StateId;
+        }
+
+        fn Done(&self) -> bool {
+            return self.pos == self.vec.len();
+        }
+
+        fn Next(&mut self) {
+            self.pos += 1;
+        }
+
+        fn new(fst: &'a ConstFst<ArcType>) -> Self {
+            return Self { vec: &fst.states, pos: 0 };
+        }
+    }
 }
 
 impl<'a, ArcType : 'a + traits::Arc> traits::IterableFst<'a, ArcType> for ConstFst<ArcType> {
-    type ArcIterator = CFstArcIterator<'a, ArcType>;
-    type StateIterator = CFstStateIterator<'a, ArcType>;
+    type ArcIterator = details::ArcIterator<'a, ArcType>;
+    type StateIterator = details::StateIterator<'a, ArcType>;
 }
-
-impl<'a, ArcType : traits::Arc> traits::ArcIterator<'a, ArcType, StateId, ConstFst<ArcType>> for CFstArcIterator<'a, ArcType> {
-    fn Value(&self) -> ArcType {
-        return self.fst.arcs[self.pos]
-    }
-
-    fn Done(&self) -> bool {
-        return self.pos == self.vec.end;
-    }
-
-    fn Next(&mut self) {
-        self.pos += 1;
-    }
-
-    fn new (fst: &'a ConstFst<ArcType>,
-            state : StateId) -> Self {
-        let arc_range = fst.states[state as usize].arcs;
-        return Self{ vec : arc_range, fst, pos : arc_range.begin };
-    }
-}
-
-
-impl<'a, ArcType : traits::Arc> traits::StateIterator<'a, ArcType, StateId, ConstFst<ArcType>> for CFstStateIterator<'a, ArcType> {
-
-    fn Value(&self) -> StateId {
-        return self.pos as StateId;
-    }
-
-    fn Done(&self) -> bool {
-        return self.pos == self.vec.len();
-    }
-
-    fn Next(&mut self) {
-        self.pos += 1;
-    }
-
-    fn new (fst: &'a ConstFst<ArcType>) -> Self {
-        return Self{ vec : &fst.states, pos : 0 };
-    }
-
-}
-
 
 impl<ArcType : traits::Arc> ConstFst<ArcType> {
     pub  fn new<'a, FST : traits::IterableFst<'a, ArcType>> (fst : &'a FST) -> Self {
@@ -153,5 +157,21 @@ impl<ArcType : traits::Arc> ConstFst<ArcType> {
         result.start = fst.Start();
         result.arcs.shrink_to_fit();
         return result;
+    }
+
+    pub fn Final(&self, state : StateId) -> ArcType::Weight {
+        return self.states[state as usize].final_weight;
+    }
+    pub fn Start(&self) -> StateId {
+        return self.start;
+    }
+
+    pub fn NumStates(&self) -> StateId {
+        return self.states.len() as StateId;
+    }
+    pub fn NumArcs(&self, state : StateId) -> isize {
+        let state_descr = &self.states[state as usize];
+        let arc_indexer = &state_descr.arcs;
+        return (arc_indexer.end - arc_indexer.begin) as isize;
     }
 }
