@@ -19,6 +19,17 @@ pub trait IterableFst<'a, ArcType : Arc,
     type StateIterator : StateIterator<'a, ArcType, StateType, SelfType>;
 }
 
+pub trait MutableFst<ArcType :Arc, StateType : Copy + Clone = StateId> :
+    ExpandedFst<ArcType, StateType> {
+
+    fn SetStart(&mut self, s: StateType);
+    fn SetFinal(&mut self, s : StateType, w : ArcType::Weight);
+    fn AddState(&mut self) -> StateType;
+    fn AddArc(&mut self, s : StateType, arc : ArcType);
+    fn DeleteStates(&mut self);
+    fn DeleteArcs(&mut self, s : StateType);
+}
+
 pub trait StateIterator<'a, ArcType : Arc, StateType :  Copy + Clone, FST : BaseFst<ArcType, StateType>> {
     fn Value(&self) -> StateType;
     fn Done(&self) -> bool;

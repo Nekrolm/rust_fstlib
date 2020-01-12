@@ -33,20 +33,20 @@ fn main() {
         let s2 = g.AddState();
         let s3 = g.AddState();
 
-        g.AddArc(s1.clone(),
+        g.AddArc(s1,
                  std::Arc {
                      ilabel: 0,
                      olabel: 0,
                      weight: std::Weight::One(),
-                     nextstate: s2.clone()
+                     nextstate: s2
                  });
 
-        g.AddArc(s2.clone(),
+        g.AddArc(s2,
                  std::Arc {
                      ilabel: 1,
                      olabel: 1,
                      weight: std::Weight::One(),
-                     nextstate: s3.clone()
+                     nextstate: s3
                  });
 
 
@@ -54,7 +54,6 @@ fn main() {
         g.SetFinal(s3, std::Weight::new(5.));
     }
 
-//
     traverse(&g);
 
     println!("try const!");

@@ -35,6 +35,15 @@ impl <ArcType : traits::Arc> VectorFst<ArcType> {
         self.states[state as usize].final_weight = w;
     }
 
+    pub fn DeleteStates(&mut self) {
+        self.states.clear();
+        self.start = traits::kNoStateId;
+    }
+
+    pub fn DeleteArcs(&mut self, s : traits::StateId) {
+        self.states[s as usize].arcs.clear();
+    }
+
     pub fn SetStart(&mut self, state : traits::StateId) {
         self.start = state;
     }
@@ -64,6 +73,27 @@ impl<ArcType : traits::Arc> traits::ExpandedFst<ArcType> for VectorFst<ArcType> 
     }
     fn NumArcs(&self, state : traits::StateId) -> isize {
         return self.states[state as usize].arcs.len() as isize;
+    }
+}
+
+impl<ArcType : traits::Arc> traits::MutableFst<ArcType> for VectorFst<ArcType> {
+    fn SetStart(&mut self, s : traits::StateId) {
+        self.SetStart(s);
+    }
+    fn SetFinal(&mut self, s : traits::StateId, w : ArcType::Weight) {
+        self.SetFinal(s, w);
+    }
+    fn AddState(&mut self) -> traits::StateId {
+        return self.AddState();
+    }
+    fn AddArc(&mut self, s : traits::StateId, arc : ArcType) {
+        self.AddArc(s, arc);
+    }
+    fn DeleteStates(&mut self) {
+        self.DeleteStates();
+    }
+    fn DeleteArcs(&mut self, s : traits::StateId){
+        self.DeleteArcs(s);
     }
 }
 

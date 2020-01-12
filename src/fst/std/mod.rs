@@ -11,9 +11,11 @@ pub type ConstFst = generic::ConstFst<Arc>;
 
 pub trait Fst<'a, SelfType : traits::BaseFst<Arc> = Self> :
 traits::IterableFst<'a, Arc, traits::StateId, SelfType> {}
+pub trait MutableFst : traits::MutableFst<Arc> {}
 
 impl<'a> Fst<'a> for VectorFst {}
 impl<'a> Fst<'a> for ConstFst {}
+impl MutableFst for VectorFst {}
 
 // forward generic make functions for iterators
 pub use generic::ArcIterator;

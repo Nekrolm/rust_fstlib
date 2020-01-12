@@ -14,6 +14,7 @@ use super::traits;
 
 //forward traits
 pub use traits::IterableFst as Fst;
+pub use traits::MutableFst;
 pub use traits::ArcIterator as ArcIteratorTrait;
 pub use traits::StateIterator as StateIteratorTrait;
 pub use traits::Weight as WeightTraits;
