@@ -1,6 +1,7 @@
 mod weight;
-
+mod binary_io;
 pub use weight::*;
+pub use binary_io::*;
 
 use super::generic;
 use super::traits;

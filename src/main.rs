@@ -1,5 +1,8 @@
 mod fst;
 
+use std::fs::File;
+use crate::fst::std::VectorFst;
+
 fn traverse<'a, FST : fst::std::Fst<'a>>(g : &'a FST){
     use fst::std::*;
 
@@ -25,7 +28,7 @@ fn traverse<'a, FST : fst::std::Fst<'a>>(g : &'a FST){
     }
 }
 
-fn main() {
+fn main() -> std::io::Result<()> {
     use crate::fst::std;
     let mut g = std::VectorFst::new();
     {
@@ -59,5 +62,26 @@ fn main() {
     println!("try const!");
 
     let g_const = std::ConstFst::new(&g);
+
     traverse(&g_const);
+
+
+    println!("try read/write!");
+
+
+    {
+        let mut file = File::create("fst.bin")?;
+        g.Write(&mut file)?;
+    }
+
+    {
+        let mut file = File::open("fst.bin")?;
+        VectorFst::Read(&mut file).and_then(|fst|{
+           traverse(&fst);
+            return Ok(());
+        })?;
+    }
+
+    return Ok(());
+
 }

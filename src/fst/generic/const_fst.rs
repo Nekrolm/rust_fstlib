@@ -1,6 +1,9 @@
 use super::super::traits;
 use super::super::generic;
 use crate::fst::traits::StateId;
+use std::error::Error;
+
+use std::io;
 
 #[derive(Copy, Clone)]
 struct ArcRange {
@@ -112,6 +115,8 @@ impl<'a, ArcType : 'a + traits::Arc> traits::IterableFst<'a, ArcType> for ConstF
     type StateIterator = details::StateIterator<'a, ArcType>;
 }
 
+
+
 impl<ArcType : traits::Arc> ConstFst<ArcType> {
     pub  fn new<'a, FST : traits::IterableFst<'a, ArcType>> (fst : &'a FST) -> Self {
         let mut result = Self {
@@ -174,4 +179,5 @@ impl<ArcType : traits::Arc> ConstFst<ArcType> {
         let arc_indexer = &state_descr.arcs;
         return (arc_indexer.end - arc_indexer.begin) as isize;
     }
+
 }
